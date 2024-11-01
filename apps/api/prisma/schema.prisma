@@ -10,12 +10,165 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Sample {
-  id        Int      @id @default(autoincrement())
-  name      String
-  code      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String
+  username String
+  password String
+  role     Role
 
-  @@map("samples") // if you want to use snake_case format
+  @@map("users")
+}
+
+enum Role {
+  SUPERADMIN @map("SUPERADMIN")
+  PERSONALIA @map("PERSONALIA")
+  ADMIN      @map("ADMIN")
+}
+
+model Department {
+  id       Int        @id @default(autoincrement())
+  name     String
+  JobTitle JobTitle[]
+  Employee Employee[]
+
+  @@map("departments")
+}
+
+model JobTitle {
+  id           Int     @id @default(autoincrement())
+  name         String
+  description  String? @db.LongText
+  departmentId Int
+
+  department Department @relation(fields: [departmentId], references: [id])
+  Employee   Employee[]
+
+  @@map("job_titles")
+}
+
+enum EmployeeType {
+  KARYAWAN_LEPAS @map("KARYAWAN_LEPAS")
+  KARYAWAN_TETAP @map("KARYAWAN_TETAP")
+}
+
+model Employee {
+  id           Int          @id @default(autoincrement())
+  name         String
+  employeeType EmployeeType
+  address      String?
+  phoneNumber  String?
+  hiringDate   DateTime
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
+  departmentId Int
+  jobTitleId   Int
+  salary       Int          @default(0)
+
+  department        Department          @relation(fields: [departmentId], references: [id])
+  jobTitle          JobTitle            @relation(fields: [jobTitleId], references: [id])
+  // Overtime          Overtime[]
+  Attendance        Attendance[]
+  Payroll           Payroll[]
+  EmployeeAllowance EmployeeAllowance[]
+  EmployeeDeduction  EmployeeDeduction[]
+
+  @@map("employees")
+}
+
+// enum OvertimeType {
+//   HARI_KERJA @map("HARI_KERJA")
+//   HARI_LIBUR @map("HARI_LIBUR")
+// }
+
+// model Overtime {
+//   id         Int          @id @default(autoincrement())
+//   date       DateTime
+//   workHours  Int
+//   type       OvertimeType
+//   employeeId Int
+
+//   employee Employee @relation(fields: [employeeId], references: [id])
+
+//   @@map("overtimes")
+// }
+
+model Attendance {
+  id             Int      @id @default(autoincrement())
+  payPeriodStart DateTime
+  payPeriodEnd   DateTime
+  hadir          Int      @default(0)
+  izin           Int      @default(0)
+  mangkir        Int      @default(0)
+  cuti           Int      @default(0)
+  lemburKerja    Int      @default(0)
+  lemburLibur    Int      @default(0)
+  employeeId     Int      
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@map("attendances")
+}
+
+model Payroll {
+  id             Int      @id @default(autoincrement())
+  baseSalary     Int
+  payPeriodStart DateTime
+  payPeriodEnd   DateTime
+  grossPay       Int
+  netPay         Int
+  employeeId     Int
+  totalTunjangan Int
+  totalPotongan  Int
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@map("payrolls")
+}
+
+model Allowance {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String    @db.LongText
+  amount      Int?
+  deletedAt   DateTime?
+
+  EmployeeAllowance EmployeeAllowance[]
+
+  @@map("allowances")
+}
+
+model EmployeeAllowance {
+  id          Int  @id @default(autoincrement())
+  employeeId  Int
+  amount      Int?
+  allowanceId Int
+
+  employee  Employee  @relation(fields: [employeeId], references: [id])
+  allowance Allowance @relation(fields: [allowanceId], references: [id])
+
+  @@map("employee_allowance")
+}
+
+model Deduction {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String    @db.LongText
+  amount      Int
+  deletedAt   DateTime?
+
+  EmployeeDeduction EmployeeDeduction[]
+
+  @@map("deductions")
+}
+
+model EmployeeDeduction {
+  id          Int @id @default(autoincrement())
+  employeeId  Int
+  deductionId Int
+
+  employee  Employee  @relation(fields: [employeeId], references: [id])
+  deduction Deduction @relation(fields: [deductionId], references: [id])
+
+  @@map("employee_deduction")
 }
